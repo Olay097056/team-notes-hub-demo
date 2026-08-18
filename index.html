@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Notes Hub — interface demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --background:#f5f5f7; --foreground:#1d1d1f; --surface:#ffffff;
+    --border:#e5e5e7; --muted:#86868b; --accent:#0071e3;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    background:var(--background); color:var(--foreground);
+    font-family:'Inter', system-ui, Arial, sans-serif;
+    font-size:14px;
+  }
+  .ribbon{
+    background:#1d1d1f; color:#f5f5f7; text-align:center;
+    padding:8px 12px; font-size:12px; letter-spacing:.3px;
+  }
+  .ribbon b{color:#ffd60a;}
+  .shell{display:flex; height:calc(100vh - 36px); flex-direction:column;}
+  .searchbar{
+    display:flex; align-items:center; gap:10px; height:56px; flex-shrink:0;
+    border-bottom:1px solid var(--border); background:rgba(255,255,255,.85);
+    padding:0 16px; backdrop-filter:blur(6px);
+  }
+  .searchbar .brand{font-weight:700; font-size:14px; white-space:nowrap; margin-right:8px;}
+  .searchwrap{position:relative; width:100%; max-width:420px;}
+  .searchwrap svg{position:absolute; left:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--muted);}
+  .searchbar input{
+    width:100%; border:1px solid var(--border); border-radius:8px; background:var(--background);
+    padding:7px 12px 7px 34px; font-size:14px; color:var(--foreground); outline:none;
+  }
+  .searchbar input:focus{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .search-popup{
+    position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:50;
+    background:var(--surface); border:1px solid var(--border); border-radius:8px;
+    box-shadow:0 8px 24px rgba(0,0,0,.12); max-height:320px; overflow:auto; display:none;
+  }
+  .search-popup.open{display:block;}
+  .search-popup .sr{padding:9px 12px; border-bottom:1px solid var(--border); cursor:pointer;}
+  .search-popup .sr:hover{background:rgba(0,0,0,.04);}
+  .search-popup .sr b{font-weight:600; font-size:13px; display:block;}
+  .search-popup .sr span{font-size:12px; color:var(--muted); display:block;}
+  .body{display:flex; flex:1; min-height:0;}
+  /* Sidebar */
+  .sidebar{
+    width:256px; flex-shrink:0; display:flex; flex-direction:column;
+    border-right:1px solid var(--border); background:rgba(255,255,255,.6);
+  }
+  .side-head{display:flex; align-items:center; justify-content:space-between; padding:16px 16px 8px;}
+  .side-head h2{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);}
+  .folder{padding:10px 12px; font-size:14px; border-radius:6px; margin:0 6px 2px; cursor:pointer; display:flex; justify-content:space-between;}
+  .folder:hover{background:rgba(0,0,0,.05);}
+  .folder.active{background:rgba(0,113,227,.12); color:var(--accent); font-weight:500;}
+  .folder .count{color:var(--muted); font-size:12px;}
+  .tags-wrap{padding:16px 16px 6px;}
+  .tags-wrap h2{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:8px;}
+  .taglist{display:flex; flex-wrap:wrap; gap:6px; padding:0 10px;}
+  .tag{background:rgba(0,0,0,.05); color:var(--foreground); border-radius:999px; padding:3px 11px; font-size:12px; font-weight:500; cursor:pointer;}
+  .tag.active{background:rgba(0,113,227,.12); color:var(--accent);}
+  .trash-link{margin-top:auto; border-top:1px solid var(--border); padding:12px 16px; cursor:pointer;}
+  .trash-link span{margin-right:6px;}
+  .trash-link.active{color:var(--accent); font-weight:500;}
+  /* Main */
+  .main{flex:1; min-width:0; overflow-y:auto;}
+  .crumbs{font-size:12px; color:var(--muted); padding:16px 32px 0;}
+  .crumbs b{color:var(--foreground); font-weight:600;}
+  .listview{margin:0 auto; padding:12px 32px 24px; max-width:680px;}
+  .list-head{display:flex; align-items:center; justify-content:space-between; margin:8px 0 16px;}
+  .list-head h1{font-size:17px; font-weight:600;}
+  .list-head .empty{font-size:13px; color:var(--muted); font-weight:400;}
+  .btn{background:var(--accent); color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit;}
+  .btn.ghost{background:transparent; color:var(--accent);}
+  .notes{border:1px solid var(--border); border-radius:10px; background:var(--surface); list-style:none;}
+  .note{display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-top:1px solid var(--border); cursor:pointer;}
+  .note:first-child{border-top:none;}
+  .note:hover{background:var(--background);}
+  .note .t{font-weight:500; font-size:14px;}
+  .note .m{font-size:12px; color:var(--muted); margin-top:2px;}
+  .note .x{color:var(--muted); cursor:pointer; font-size:13px; display:none;}
+  .note:hover .x{display:inline;}
+  .note .x:hover{color:#dc2626;}
+  /* Editor */
+  .noteview{margin:0 auto; padding:24px 32px 48px; max-width:720px;}
+  .noteview h1{font-size:26px; font-weight:700; margin-bottom:4px;}
+  .nv-meta{font-size:12px; color:var(--muted); margin-bottom:18px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;}
+  .tagpill{background:rgba(0,0,0,.05); border-radius:999px; padding:2px 10px; font-size:11px; font-weight:500;}
+  .nv-body{background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px 26px; font-size:14.5px; line-height:1.6;}
+  .nv-body h2{font-size:18px; margin:18px 0 6px;}
+  .nv-body p{margin:.4em 0;}
+  .nv-body ul,.nv-body ol{padding-left:22px; margin:.4em 0;}
+  .nv-body pre{background:var(--background); border:1px solid var(--border); border-radius:8px; padding:12px 14px; font-size:12.5px; overflow-x:auto; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .nv-body code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; background:var(--background); padding:1px 5px; border-radius:4px; font-size:12.5px;}
+  .nv-body pre code{background:none; padding:0;}
+  .nv-body blockquote{border-left:3px solid var(--border); padding-left:14px; color:var(--muted); margin:.5em 0;}
+  .nv-body table{border-collapse:collapse; width:100%; margin:.5em 0;}
+  .nv-body th,.nv-body td{border:1px solid var(--border); padding:6px 10px; text-align:left;}
+  .nv-body th{background:var(--background); font-weight:600;}
+  .tasklist{list-style:none; padding-left:2px;}
+  .tasklist li{margin:.2em 0;}
+  .tasklist input{margin-right:8px;}
+  .tasklist li.done span{text-decoration:line-through; color:var(--muted);}
+  .back{display:inline-flex; align-items:center; gap:6px; color:var(--accent); font-size:13px; cursor:pointer; margin-bottom:6px;}
+  .view{display:none;}
+  .view.on{display:block;}
+  @media (max-width:640px){
+    .sidebar{width:232px;}
+    .listview,.noteview{padding-left:16px; padding-right:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="ribbon"><b>⚠ Demo</b> — synthetic, read-only interface preview. Not connected to any real system.</div>
+<div class="shell">
+  <div class="searchbar">
+    <div class="brand">📁 Team Notes</div>
+    <div class="searchwrap">
+      <svg viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M17 17l-3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <input id="q" type="search" placeholder="Search notes…" autocomplete="off">
+      <div class="search-popup" id="qpop"></div>
+    </div>
+  </div>
+  <div class="body">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main">
+      <div class="crumbs" id="crumbs"></div>
+      <div class="view" id="v-list"></div>
+      <div class="view" id="v-note"></div>
+      <div class="view" id="v-tags"></div>
+      <div class="view" id="v-trash"></div>
+    </main>
+  </div>
+</div>
+<script>
+/* ---- Synthetic, deterministic demo data (all invented) ---- */
+const DATA = {
+  folders: [
+    {id:'ops', name:'Operations', count:5},
+    {id:'hr', name:'HR & Onboarding', count:4},
+    {id:'it', name:'IT & Infrastructure', count:6},
+    {id:'retail', name:'Retail Playbooks', count:3},
+    {id:'security', name:'Security', count:4},
+    {id:'finance', name:'Finance & Reporting', count:2},
+  ],
+  notes: {
+    ops:[
+      {id:'n1', t:'Opening store checklist', f:'Operations', up:'Aug 12, 2026, 09:41', tags:['checklist','opening'],
+        body:`<p>Run this before the first customer walks in. Front-of-house staff should leave the shift brief beside the register.</p><ul class="tasklist"><li><label><input type="checkbox" checked> Unlock <b>both</b> entrance doors</label></li><li><label><input type="checkbox" checked> Turn on POS terminals, verify the network light</label></li><li><label><input type="checkbox"> Count opening till against the <code>cash sheet</code></label></li><li><label><input type="checkbox"> Write today's shift on the whiteboard</label></li></ul><p>If a terminal fails to sync, call extension <b>4200</b> — do not open the drawer manually.</p>`},
+      {id:'n2', t:'Nightly close & cash drop', f:'Operations', up:'Aug 10, 2026, 22:15', tags:['close','cash'],
+        body:`<blockquote>Two people must witness every cash drop. One counts, the second signs.</blockquote><p>End-of-day steps after the last customer:</p><ol><li>Z-report from each POS.</li><li>Bag the <code>main</code> drawer, seal with tape, log the amount.</li><li>Drop the bag in the safe; write the serial in the logbook.</li><li>Set the alarm and lock the back door.</li></ol>`},
+      {id:'n3', t:'Shift handover notes', f:'Operations', up:'Aug 08, 2026, 17:50', tags:['handover'],
+        body:`<p>Standard handover template — finish before your replacement arrives.</p><ul><li>Open issues (escalate if more than 3 in a shift).</li><li>Stock that needs reordering.</li><li>Anything the next shift must know <b>before</b> opening.</li></ul>`},
+      {id:'n4', t:'Refund & return policy', f:'Operations', up:'Aug 05, 2026, 14:02', tags:['policy','returns'],
+        body:`<table><tr><th>Scenario</th><th>Window</th><th>Approval</th></tr><tr><td>Unopened, receipt present</td><td>30 days</td><td>Cashier</td></tr><tr><td>Opened / used</td><td>14 days</td><td>Manager</td></tr><tr><td>No receipt</td><td>In-store credit</td><td>Manager</td></tr></table><p>Never accept a return of perishable goods once scanned.</p>`},
+      {id:'n5', t:'Daily sales report', f:'Operations', up:'Aug 03, 2026, 20:30', tags:['report'],
+        body:`<p>The daily sales summary is generated at 19:00. Post it to the <code>#sales</code> channel before leaving.</p><pre>HEAD /daily-sales
+  status: 200  time: 340ms
+  rows:   2,144
+saved to /reports/daily/2026-08-03.csv</pre>`},
+    ],
+    hr:[
+      {id:'h1', t:'New-hire onboarding checklist', f:'HR & Onboarding', up:'Aug 11, 2026, 11:20', tags:['onboarding','checklist'],
+        body:`<p>Day-one agenda for every new hire. The buddy is assigned by the hiring manager.</p><ul class="tasklist"><li><label><input type="checkbox"> Workspace, laptop, and badge ready</label></li><li><label><input type="checkbox"> Accounts created (email, VPN, chat)</label></li><li><label><input type="checkbox"> Policy pack signed, safety briefing done</label></li><li><label><input type="checkbox"> First-week 1:1 booked with buddy</label></li></ul>`},
+      {id:'h2', t:'Interview scorecard', f:'HR & Onboarding', up:'Aug 09, 2026, 15:44', tags:['hiring'],
+        body:`<p>Score each candidate 1&ndash;5 on the four axes. Total of <b>17 or more</b> flags a "yes".</p><ol><li>Role skill (hands-on exercise required).</li><li>Communication &amp; cultural fit.</li><li>Growth potential.</li><li>Compensation alignment.</li></ol>`},
+      {id:'h3', t:'Probation review form', f:'HR & Onboarding', up:'Jul 30, 2026, 10:05', tags:['review'],
+        body:`<p>Completed at the 60-day mark. Goals from onboarding should be the anchor.</p>`},
+      {id:'h4', t:'Public holiday calendar', f:'HR & Onboarding', up:'Jul 28, 2026, 09:00', tags:['calendar'],
+        body:`<p>Floating holidays must be requested <b>two weeks</b> in advance in the scheduling tool.</p>`},
+    ],
+    it:[
+      {id:'i1', t:'Printer troubleshooting', f:'IT & Infrastructure', up:'Aug 12, 2026, 08:55', tags:['printers','guide'],
+        body:`<p>First try the obvious stuff before you escalate:</p><ol><li>Power cycle the printer (unplug 10s).</li><li>Check the queue for stuck jobs and clear them.</li><li>Verify the IP hasn't changed in the DHCP lease.</li><li>If still dead, ping the host and note the result.</li></ol><pre>$ ping -c 3 printer-01
+  64 bytes from 10.10.4.21: icmp_seq=1 ttl=64 time=1.2 ms
+  64 bytes from 10.10.4.21: icmp_seq=2 ttl=64 time=0.9 ms</pre><p>Escalate with the ping output on hand.</p>`},
+      {id:'i2', t:'Wi-Fi & network access', f:'IT & Infrastructure', up:'Aug 10, 2026, 16:12', tags:['network','wifi'],
+        body:`<p>Guest Wi-Fi rotates its passphrase weekly — the current one is on the front desk card. Employee devices use certificate-based auth; report lost devices to IT the same day.</p>`},
+      {id:'i3', t:'Laptop VPN setup', f:'IT & Infrastructure', up:'Aug 06, 2026, 13:30', tags:['vpn','setup'],
+        body:`<p>VPN client is pre-installed. Sign in with your work account, then approve the push.</p><ul><li>Windows: open <code>Work VPN</code> from the tray.</li><li>macOS: use the menu-bar app.</li><li>Two-factor push must be answered within 30 seconds.</li></ul>`},
+      {id:'i4', t:'Password reset flow', f:'IT & Infrastructure', up:'Aug 04, 2026, 10:18', tags:['accounts'],
+        body:`<p>Only the account owner can reset a password. Identity is verified by a 6-digit code sent to the registered mobile.</p>`},
+      {id:'i5', t:'Server room access rules', f:'IT & Infrastructure', up:'Jul 29, 2026, 14:22', tags:['security','access'],
+        body:`<p>Badge access is logged. The room must never be left <b>unattended and open</b>, even for two minutes.</p>`},
+    ],
+    retail:[
+      {id:'r1', t:'Upselling playbook', f:'Retail Playbooks', up:'Aug 07, 2026, 12:40', tags:['playbook'],
+        body:`<p>Offer one relevant add-on per transaction — never more. Match the customer's tone.</p>`},
+      {id:'r2', t:'Shelf restocking cadence', f:'Retail Playbooks', up:'Aug 01, 2026, 09:15', tags:['stock'],
+        body:`<p>Fast movers are topped up from the back room at 10:00 and 16:00. Slow lines are cycled weekly on Mondays.</p>`},
+      {id:'r3', t:'End-of-aisle display rotation', f:'Retail Playbooks', up:'Jul 26, 2026, 11:00', tags:['display'],
+        body:`<p>Displays rotate on a fortnightly cycle set by the merchandising plan.</p>`},
+    ],
+    security:[
+      {id:'s1', t:'Alarm arming / disarming', f:'Security', up:'Aug 11, 2026, 19:05', tags:['security','alarm'],
+        body:`<p>Arm the alarm when the last person leaves. The code changes quarterly and is distributed by the office manager.</p>`},
+      {id:'s2', t:'Lost key / badge procedure', f:'Security', up:'Aug 09, 2026, 08:30', tags:['security'],
+        body:`<p>Report a lost key or badge immediately. The affected lock/key is re-keyed within 24 hours.</p>`},
+      {id:'s3', t:'Visitor sign-in', f:'Security', up:'Aug 02, 2026, 10:50', tags:['security','visitors'],
+        body:`<p>Visitors sign in at reception, wear a visible pass, and are met by their host before entering the floor.</p>`},
+      {id:'s4', t:'CCTV review process', f:'Security', up:'Jul 25, 2026, 16:40', tags:['security','cctv'],
+        body:`<p>Footage is retained 30 days. Review requests go through the office manager, who logs the access.</p>`},
+    ],
+    finance:[
+      {id:'f1', t:'Petty cash reconciliation', f:'Finance & Reporting', up:'Aug 05, 2026, 14:45', tags:['cash','finance'],
+        body:`<p>Reconciled every Friday. Float is fixed at the agreed baseline and top-ups are logged.</p>`},
+      {id:'f2', t:'Expense submission deadline', f:'Finance & Reporting', up:'Jul 31, 2026, 09:00', tags:['finance'],
+        body:`<p>Expenses are submitted <b>by the 5th</b> of the following month, receipts attached.</p>`},
+    ],
+  },
+  trash:[
+    {t:'Old moving-out checklist', f:'Operations', up:'Aug 11, 2026, 18:20'},
+    {t:'Seasonal promo (draft v3)', f:'Retail Playbooks', up:'Aug 09, 2026, 15:10'},
+    {t:'Old badge printer guide', f:'IT & Infrastructure', up:'Aug 06, 2026, 11:02'},
+  ],
+};
+const NOTES = {};
+Object.values(DATA.notes).forEach(arr=>arr.forEach(n=>NOTES[n.id]=n));
+
+let state = {where:'list', folder:null, note:null, tag:null, trash:false};
+const fmt = n => `Updated ${n.up}`;
+
+function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstChild;}
+function monoCount(fid){
+  let c=0; (DATA.notes[fid]||[]).forEach(()=>c++); return c;
+}
+
+function renderSidebar(){
+  const s=document.getElementById('sidebar');
+  const parts=[`<div class="side-head"><h2>Folders</h2></div>`];
+  DATA.folders.forEach(f=>{
+    parts.push(`<div class="folder ${state.folder===f.id?'active':''}" data-folder="${f.id}"><span>${f.name}</span><span class="count">${monoCount(f.id)}</span></div>`);
+  });
+  parts.push(`<div class="tags-wrap"><h2>Tags</h2></div><div class="taglist">`);
+  ['checklist','security','cash','report','guide','setup','policy','alarm'].forEach(t=>{
+    parts.push(`<div class="tag ${state.tag===t?'active':''}" data-tag="${t}">#${t}</div>`);
+  });
+  parts.push(`</div><div class="trash-link ${state.trash?'active':''}" data-trash="1"><span>🗑</span>Trash</div>`);
+  s.innerHTML=parts.join('');
+}
+
+function renderCrumbs(){
+  const c=document.getElementById('crumbs');
+  let html='';
+  if(state.trash) html=`Trash`;
+  else if(state.tag) html=`<b>#${state.tag}</b> &nbsp;·&nbsp; ${tagCount(state.tag)} notes`;
+  else if(state.note){ const f=DATA.folders.find(x=>x.name===NOTES[state.note].f);
+    html=`${NOTES[state.note].f} &nbsp;/&nbsp; ${NOTES[state.note].t}`; }
+  else if(state.folder){ const f=DATA.folders.find(x=>x.id===state.folder);
+    html=`<b>${f?f.name:''}</b> &nbsp;·&nbsp; ${monoCount(state.folder)} notes`; }
+  else html=`<b>All folders</b>`;
+  c.innerHTML=html;
+}
+
+function tagCount(tag){
+  let c=0; Object.values(DATA.notes).forEach(arr=>arr.forEach(n=>{if(n.tags.includes(tag))c++;})); return c;
+}
+
+function renderList(){
+  const v=document.getElementById('v-list');
+  let folder=DATA.folders.find(x=>x.id===state.folder);
+  let title = folder ? folder.name : 'All notes';
+  const arr = state.folder ? (DATA.notes[state.folder]||[]) : Object.values(DATA.notes).flat();
+  v.innerHTML=`
+    <div class="listview">
+      <div class="list-head"><h1>${title} <span class="empty">· ${arr.length} notes</span></h1>
+      <button class="btn">New Note</button></div>
+      <ul class="notes">${arr.map(n=>`
+        <li class="note" data-open="${n.id}">
+          <div><div class="t">${n.t}</div><div class="m">${fmt(n)}</div></div>
+          <span class="x" data-del="${n.id}">✕</span>
+        </li>`).join('')}
+      </ul>
+    </div>`;
+}
+
+function renderTags(){
+  const v=document.getElementById('v-tags');
+  const arr=Object.values(DATA.notes).flat().filter(n=>n.tags.includes(state.tag));
+  v.innerHTML=`<div class="listview">
+    <div class="list-head"><h1>#${state.tag} <span class="empty">· ${arr.length} notes</span></h1></div>
+    <ul class="notes">${arr.map(n=>`<li class="note" data-open="${n.id}"><div><div class="t">${n.t}</div><div class="m">${n.f} · ${fmt(n)}</div></div></li>`).join('')}</ul>
+  </div>`;
+}
+
+function renderTrash(){
+  const v=document.getElementById('v-trash');
+  v.innerHTML=`<div class="listview">
+    <div class="list-head"><h1>Trash <span class="empty">· ${DATA.trash.length} notes</span></h1></div>
+    <ul class="notes">${DATA.trash.map(n=>`<li class="note"><div><div class="t">${n.t}</div><div class="m">${n.f} · ${fmt(n)}</div></div><span class="x">↩</span></li>`).join('')}</ul>
+  </div>`;
+}
+
+function renderNote(){
+  const n=NOTES[state.note]; if(!n) return;
+  const v=document.getElementById('v-note');
+  v.innerHTML=`<div class="noteview">
+    <div class="back" data-back="1">← Back to list</div>
+    <h1>${n.t}</h1>
+    <div class="nv-meta"><span>${n.f}</span><span>${fmt(n)}</span>${n.tags.map(t=>`<span class="tagpill">#${t}</span>`).join('')}</div>
+    <div class="nv-body">${n.body}</div>
+  </div>`;
+}
+
+function renderSearch(q){
+  const pop=document.getElementById('qpop');
+  if(!q.trim()){pop.classList.remove('open');return;}
+  const ql=q.toLowerCase();
+  const hits=Object.values(DATA.notes).flat().filter(n=>(n.t+' '+n.body).toLowerCase().includes(ql)).slice(0,6);
+  pop.innerHTML = hits.length? hits.map(n=>`<div class="sr" data-open="${n.id}"><b>${n.t}</b><span>${n.f} · ${n.body.replace(/<[^>]+>/g,'').slice(0,60)}…</span></div>`).join(''): `<div class="sr"><b>No matching notes</b></div>`;
+  pop.classList.add('open');
+}
+
+function show(){
+  ['v-list','v-note','v-tags','v-trash'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  let target;
+  if(state.trash) target='v-trash';
+  else if(state.note) target='v-note';
+  else if(state.tag) target='v-tags';
+  else target='v-list';
+  document.getElementById(target).classList.add('on');
+  renderSidebar(); renderCrumbs();
+  if(target==='v-list') renderList();
+  else if(target==='v-tags') renderTags();
+  else if(target==='v-trash') renderTrash();
+  else renderNote();
+  document.getElementById('mainscroll') && 0;
+}
+
+document.addEventListener('click',e=>{
+  const f=e.target.closest('[data-folder]');
+  const t=e.target.closest('[data-tag]');
+  const tr=e.target.closest('[data-trash]');
+  const open=e.target.closest('[data-open]');
+  const back=e.target.closest('[data-back]');
+  if(f){state={where:'list',folder:f.dataset.folder,note:null,tag:null,trash:false};show();return;}
+  if(t){state={where:'tags',folder:null,note:null,tag:t.dataset.tag,trash:false};show();return;}
+  if(tr){state={where:'trash',folder:null,note:null,tag:null,trash:true};show();return;}
+  if(open){ if(state.trash) return; state.note=open.dataset.open; state.tag=null; state.where='note'; show(); return;}
+  if(back){state.note=null;state.where='list';show();}
+});
+document.getElementById('q').addEventListener('input',e=>renderSearch(e.target.value));
+document.addEventListener('click',e=>{ if(!e.target.closest('.searchwrap')) document.getElementById('qpop').classList.remove('open'); });
+
+show();
+</script>
+</body>
+</html>
