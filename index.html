@@ -142,7 +142,7 @@ const DATA = {
   folders: [
     {id:'ops', name:'Operations', count:5},
     {id:'hr', name:'HR & Onboarding', count:4},
-    {id:'it', name:'IT & Infrastructure', count:6},
+    {id:'it', name:'IT & Infrastructure', count:5},
     {id:'retail', name:'Retail Playbooks', count:3},
     {id:'security', name:'Security', count:4},
     {id:'finance', name:'Finance & Reporting', count:2},
@@ -340,7 +340,7 @@ document.addEventListener('click',e=>{
   if(f){state={where:'list',folder:f.dataset.folder,note:null,tag:null,trash:false};show();return;}
   if(t){state={where:'tags',folder:null,note:null,tag:t.dataset.tag,trash:false};show();return;}
   if(tr){state={where:'trash',folder:null,note:null,tag:null,trash:true};show();return;}
-  if(open){ if(state.trash) return; state.note=open.dataset.open; state.tag=null; state.where='note'; show(); return;}
+  if(open){ state.note=open.dataset.open; state.tag=null; state.trash=false; state.where='note'; show(); return;}
   if(back){state.note=null;state.where='list';show();}
 });
 document.getElementById('q').addEventListener('input',e=>renderSearch(e.target.value));
