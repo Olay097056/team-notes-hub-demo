@@ -9,7 +9,7 @@
 <style>
   :root{
     --background:#f5f5f7; --foreground:#1d1d1f; --surface:#ffffff;
-    --border:#e5e5e7; --muted:#86868b; --accent:#0071e3;
+    --border:#e5e5e7; --muted:#62636a; --accent:#0071e3;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{
@@ -26,24 +26,29 @@
   .searchbar{
     display:flex; align-items:center; gap:10px; height:56px; flex-shrink:0;
     border-bottom:1px solid var(--border); background:rgba(255,255,255,.85);
-    padding:0 16px; backdrop-filter:blur(6px);
+    padding:8px 16px; backdrop-filter:blur(6px);
   }
   .searchbar .brand{font-weight:700; font-size:14px; white-space:nowrap; margin-right:8px;}
+  .menu-button{display:none; align-items:center; justify-content:center; width:32px; height:32px; border:0; border-radius:7px; background:transparent; color:var(--muted); cursor:pointer;}
+  .menu-button:hover{background:rgba(0,0,0,.05); color:var(--foreground);}
   .searchwrap{position:relative; width:100%; max-width:420px;}
   .searchwrap svg{position:absolute; left:10px; top:50%; transform:translateY(-50%); width:16px; height:16px; color:var(--muted);}
   .searchbar input{
     width:100%; border:1px solid var(--border); border-radius:8px; background:var(--background);
-    padding:7px 12px 7px 34px; font-size:14px; color:var(--foreground); outline:none;
+    padding:7px 56px 7px 34px; font-size:14px; color:var(--foreground); outline:none;
   }
   .searchbar input:focus{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent);}
+  .search-shortcut{position:absolute; right:9px; top:50%; transform:translateY(-50%); padding:2px 5px; border:1px solid var(--border); border-radius:5px; background:var(--surface); color:var(--muted); font-family:inherit; font-size:11px; line-height:1.2; pointer-events:none;}
+  .sr-only{position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;}
   .search-popup{
     position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:50;
     background:var(--surface); border:1px solid var(--border); border-radius:8px;
-    box-shadow:0 8px 24px rgba(0,0,0,.12); max-height:320px; overflow:auto; display:none;
+    box-shadow:0 2px 8px rgba(0,0,0,.08); max-height:320px; overflow:auto; display:none;
   }
   .search-popup.open{display:block;}
-  .search-popup .sr{padding:9px 12px; border-bottom:1px solid var(--border); cursor:pointer;}
-  .search-popup .sr:hover{background:rgba(0,0,0,.04);}
+  .search-popup .sr{display:block; width:100%; padding:9px 12px; border:0; border-bottom:1px solid var(--border); background:transparent; color:var(--foreground); text-align:left; font:inherit; cursor:pointer; outline:none;}
+  .search-popup .empty-result{color:var(--muted); cursor:default;}
+  .search-popup .sr:hover,.search-popup .sr.active{background:rgba(0,113,227,.08);}
   .search-popup .sr b{font-weight:600; font-size:13px; display:block;}
   .search-popup .sr span{font-size:12px; color:var(--muted); display:block;}
   .body{display:flex; flex:1; min-height:0;}
@@ -52,19 +57,20 @@
     width:256px; flex-shrink:0; display:flex; flex-direction:column;
     border-right:1px solid var(--border); background:rgba(255,255,255,.6);
   }
+  .sidebar-backdrop{display:none;}
   .side-head{display:flex; align-items:center; justify-content:space-between; padding:16px 16px 8px;}
   .side-head h2{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted);}
-  .folder{padding:10px 12px; font-size:14px; border-radius:6px; margin:0 6px 2px; cursor:pointer; display:flex; justify-content:space-between;}
+  .folder{width:calc(100% - 12px); padding:10px 12px; border:0; background:transparent; color:inherit; text-align:left; font-family:inherit; font-size:14px; border-radius:6px; margin:0 6px 2px; cursor:pointer; display:flex; justify-content:space-between;}
   .folder:hover{background:rgba(0,0,0,.05);}
   .folder.active{background:rgba(0,113,227,.12); color:var(--accent); font-weight:500;}
   .folder .count{color:var(--muted); font-size:12px;}
   .tags-wrap{padding:16px 16px 6px;}
   .tags-wrap h2{font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:8px;}
   .taglist{display:flex; flex-wrap:wrap; gap:6px; padding:0 10px;}
-  .tag{background:rgba(0,0,0,.05); color:var(--foreground); border-radius:999px; padding:3px 11px; font-size:12px; font-weight:500; cursor:pointer;}
+  .tag{border:0; background:rgba(0,0,0,.05); color:var(--foreground); border-radius:999px; padding:3px 11px; font-family:inherit; font-size:12px; font-weight:500; cursor:pointer;}
   .tag.active{background:rgba(0,113,227,.12); color:var(--accent);}
-  .trash-link{margin-top:auto; border-top:1px solid var(--border); padding:12px 16px; cursor:pointer;}
-  .trash-link span{margin-right:6px;}
+  .trash-link{width:100%; margin-top:auto; display:flex; align-items:center; gap:8px; border:0; border-top:1px solid var(--border); padding:12px 16px; background:transparent; color:inherit; text-align:left; font-family:inherit; font-size:14px; cursor:pointer;}
+  .trash-link svg{width:16px; height:16px; color:var(--muted);}
   .trash-link.active{color:var(--accent); font-weight:500;}
   /* Main */
   .main{flex:1; min-width:0; overflow-y:auto;}
@@ -76,15 +82,15 @@
   .list-head .empty{font-size:13px; color:var(--muted); font-weight:400;}
   .btn{background:var(--accent); color:#fff; border:none; border-radius:8px; padding:7px 14px; font-size:13px; font-weight:500; cursor:pointer; font-family:inherit;}
   .btn.ghost{background:transparent; color:var(--accent);}
+  button:focus-visible,[tabindex="0"]:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
   .notes{border:1px solid var(--border); border-radius:10px; background:var(--surface); list-style:none;}
-  .note{display:flex; align-items:center; justify-content:space-between; padding:13px 16px; border-top:1px solid var(--border); cursor:pointer;}
+  .note{display:flex; align-items:stretch; justify-content:space-between; padding:0; border-top:1px solid var(--border);}
   .note:first-child{border-top:none;}
   .note:hover{background:var(--background);}
-  .note .t{font-weight:500; font-size:14px;}
-  .note .m{font-size:12px; color:var(--muted); margin-top:2px;}
-  .note .x{color:var(--muted); cursor:pointer; font-size:13px; display:none;}
-  .note:hover .x{display:inline;}
-  .note .x:hover{color:#dc2626;}
+  .note-open{display:flex; width:100%; align-items:center; justify-content:space-between; padding:13px 16px; border:0; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer;}
+  .note-open:hover{background:transparent;}
+  .note .t{display:block; font-weight:500; font-size:14px;}
+  .note .m{display:block; font-size:12px; color:var(--muted); margin-top:2px;}
   /* Editor */
   .noteview{margin:0 auto; padding:24px 32px 48px; max-width:720px;}
   .noteview h1{font-size:26px; font-weight:700; margin-bottom:4px;}
@@ -105,37 +111,102 @@
   .tasklist li{margin:.2em 0;}
   .tasklist input{margin-right:8px;}
   .tasklist li.done span{text-decoration:line-through; color:var(--muted);}
-  .back{display:inline-flex; align-items:center; gap:6px; color:var(--accent); font-size:13px; cursor:pointer; margin-bottom:6px;}
+  .back{display:inline-flex; align-items:center; gap:6px; padding:5px 8px; border:0; border-radius:6px; background:transparent; color:var(--accent); font-family:inherit; font-size:13px; cursor:pointer; margin-bottom:6px;}
+  .back:hover{background:rgba(0,113,227,.08);}
+  .note-actions{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px;}
+  .note-actions .back{margin:0;}
+  .editorview{margin:0 auto; padding:24px 32px 48px; max-width:920px;}
+  .editor-head{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:8px 0 12px;}
+  .editor-head h1{min-width:0; flex:1; font-size:23px; line-height:1.25; font-weight:700; overflow-wrap:anywhere;}
+  .editor-state{color:var(--muted); font-size:12px; white-space:nowrap;}
+  .editor-actions{display:flex; align-items:center; flex-wrap:wrap; gap:6px;}
+  .editor-actions .btn.secondary{background:var(--surface); color:var(--foreground); border:1px solid var(--border);}
+  .editor-actions .btn.secondary:hover{background:var(--background);}
+  .editor-tags{display:flex; align-items:center; flex-wrap:wrap; gap:7px; margin:0 0 12px; color:var(--accent); font-size:12px;}
+  .editor-toolbar{display:flex; align-items:center; flex-wrap:wrap; gap:3px; padding:7px; border:1px solid var(--border); border-radius:10px 10px 0 0; background:var(--surface);}
+  .editor-toolbar button,.editor-toolbar summary{display:inline-flex; align-items:center; justify-content:center; min-height:30px; padding:5px 8px; border:0; border-radius:6px; background:transparent; color:var(--muted); font-family:inherit; font-size:13px; font-weight:500; line-height:1.2; cursor:pointer; list-style:none;}
+  .editor-toolbar button:hover,.editor-toolbar summary:hover{background:var(--background); color:var(--foreground);}
+  .editor-toolbar summary:focus-visible,.outline-list a:focus-visible,.editor-footer button:focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px;}
+  .editor-toolbar details{position:relative;}
+  .editor-toolbar summary::-webkit-details-marker{display:none;}
+  .tool-menu{position:absolute; top:calc(100% + 5px); left:0; z-index:10; min-width:180px; padding:5px; border:1px solid var(--border); border-radius:8px; background:var(--surface); box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .tool-menu button{display:flex; width:100%; justify-content:flex-start; text-align:left;}
+  .editor-outline{display:flex; align-items:flex-start; gap:12px; padding:8px 10px; border:1px solid var(--border); border-top:0; background:#fafafa; color:var(--muted); font-size:12px;}
+  .editor-outline > span{flex:1; min-width:200px;}
+  .editor-outline button{border:0; background:transparent; color:var(--foreground); font-family:inherit; font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;}
+  .outline-list{display:flex; flex-wrap:wrap; gap:6px 14px;}
+  .outline-list[hidden]{display:none;}
+  .outline-list a{color:var(--muted); text-decoration:none;}
+  .editor-canvas{min-height:350px; padding:24px clamp(16px,4vw,32px); border:1px solid var(--border); border-top:0; border-radius:0 0 10px 10px; background:var(--surface); line-height:1.65;}
+  .editor-canvas h2{margin:0 0 10px; font-size:20px; line-height:1.3;}
+  .editor-canvas p{margin:8px 0;}
+  .editor-canvas ul,.editor-canvas ol{margin:8px 0; padding-left:24px;}
+  .editor-canvas pre{margin:12px 0; padding:12px 14px; overflow:auto; border:1px solid var(--border); border-radius:8px; background:var(--background); font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .editor-canvas code{padding:1px 4px; border-radius:4px; background:var(--background); font:12px ui-monospace,SFMono-Regular,Menlo,monospace;}
+  .sample-attachment{display:flex; align-items:center; gap:10px; max-width:420px; margin-top:16px; padding:10px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface);}
+  .sample-attachment .file-mark{display:grid; width:32px; height:36px; place-items:center; border-radius:5px; background:#eef4ff; color:var(--accent); font-size:10px; font-weight:700;}
+  .sample-attachment strong{display:block; font-size:13px; font-weight:600;}
+  .sample-attachment span{display:block; margin-top:2px; color:var(--muted); font-size:11px;}
+  .editor-footer{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 12px; border:1px solid var(--border); border-top:0; border-radius:8px; background:var(--surface); color:var(--muted); font-size:11px;}
+  .editor-footer button{border:0; background:transparent; color:inherit; font:inherit; cursor:pointer;}
+  .editor-preview{margin-top:16px; padding:24px clamp(16px,4vw,32px); border:1px solid var(--border); border-radius:10px; background:var(--surface); line-height:1.65;}
+  .editor-preview h2{font-size:20px; margin:0 0 10px;}
+  .demo-toast{position:fixed; right:20px; bottom:20px; z-index:80; max-width:min(360px,calc(100vw - 40px)); padding:11px 14px; border:1px solid var(--border); border-radius:9px; background:var(--surface); box-shadow:0 2px 8px rgba(0,0,0,.08); color:var(--foreground); font-size:13px; opacity:0; transform:translateY(8px); pointer-events:none; transition:opacity .16s ease-out,transform .16s ease-out;}
+  .demo-toast.show{opacity:1; transform:translateY(0);}
   .view{display:none;}
   .view.on{display:block;}
-  @media (max-width:640px){
-    .sidebar{width:232px;}
-    .listview,.noteview{padding-left:16px; padding-right:16px;}
+  @media (max-width:767px){
+    .menu-button{display:inline-flex; flex-shrink:0;}
+    .searchbar{gap:8px; padding:8px 12px;}
+    .searchbar .brand{font-size:12px; margin-right:0;}
+    .searchwrap{max-width:none;}
+    .sidebar{position:fixed; inset:92px auto 0 0; z-index:41; width:min(256px,calc(100vw - 48px)); height:calc(100vh - 92px); transform:translateX(-105%); transition:transform .18s ease-out; box-shadow:0 12px 28px rgba(0,0,0,.14);}
+    body:not(.sidebar-open) .sidebar{visibility:hidden;}
+    body.sidebar-open .sidebar{transform:translateX(0);}
+    .sidebar-backdrop{position:fixed; inset:92px 0 0; z-index:40; background:rgba(15,23,42,.36);}
+    body.sidebar-open .sidebar-backdrop{display:block;}
+    .listview,.noteview,.editorview{padding-left:16px; padding-right:16px;}
+    .crumbs{padding-left:16px; padding-right:16px;}
+    .editor-head h1{font-size:20px;}
+    .editor-actions{width:100%;}
+    .editor-toolbar{border-radius:9px 9px 0 0;}
+    .editor-toolbar button,.editor-toolbar summary{min-height:42px; padding:8px 10px;}
+    .editor-outline{flex-wrap:wrap;}
+    .editor-outline > span{flex-basis:100%; min-width:0;}
   }
+  @media (prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;}}
 </style>
 </head>
 <body>
 <div class="ribbon"><b>⚠ Demo</b> — synthetic, read-only interface preview. Not connected to any real system.</div>
 <div class="shell">
   <div class="searchbar">
+    <button class="menu-button" id="sidebar-toggle" type="button" aria-label="Toggle folders" aria-controls="sidebar" aria-expanded="false">
+      <svg aria-hidden="true" viewBox="0 0 20 20" width="20" height="20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
     <div class="brand">📁 Team Notes</div>
     <div class="searchwrap">
       <svg viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M17 17l-3.5-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-      <input id="q" type="search" placeholder="Search notes…" autocomplete="off">
-      <div class="search-popup" id="qpop"></div>
+      <input id="q" type="search" role="combobox" aria-label="Search notes" aria-autocomplete="list" aria-expanded="false" aria-controls="qpop" aria-describedby="search-help" placeholder="Search notes…" autocomplete="off">
+      <kbd class="search-shortcut" aria-hidden="true">Ctrl/⌘ K</kbd>
+      <p class="sr-only" id="search-help">Use the arrow keys to move through search results, Enter to open one, and Escape to close them.</p>
+      <div class="search-popup" id="qpop" role="listbox" aria-label="Search results"></div>
     </div>
   </div>
   <div class="body">
+    <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
     <aside class="sidebar" id="sidebar"></aside>
     <main class="main">
       <div class="crumbs" id="crumbs"></div>
       <div class="view" id="v-list"></div>
       <div class="view" id="v-note"></div>
+      <div class="view" id="v-editor"></div>
       <div class="view" id="v-tags"></div>
       <div class="view" id="v-trash"></div>
     </main>
   </div>
 </div>
+<div class="demo-toast" id="demo-toast" role="status" aria-live="polite"></div>
 <script>
 /* ---- Synthetic, deterministic demo data (all invented) ---- */
 const DATA = {
@@ -221,10 +292,22 @@ saved to /reports/daily/2026-08-03.csv</pre>`},
 const NOTES = {};
 Object.values(DATA.notes).forEach(arr=>arr.forEach(n=>NOTES[n.id]=n));
 
-let state = {where:'list', folder:null, note:null, tag:null, trash:false};
+const DRAFT = {
+  t:'Weekly access point maintenance', f:'Operations', up:'Just now', tags:['checklist','handover'],
+  body:`<p>Sample editor content for the static demo. Confirm the maintenance window with the team before making a change.</p><ul class="tasklist" id="editor-checklist"><li><label><input type="checkbox" disabled> Review the change checklist</label></li><li><label><input type="checkbox" disabled> Record the test result</label></li></ul><p>Use a short note to leave the next person a clear handover.</p>`
+};
+
+let state = {where:'list', folder:null, note:null, tag:null, trash:false, editor:false, editorNote:null, preview:false, sidebarOpen:false, outlineOpen:true, searchIndex:-1};
+state.sidebarOpen = window.matchMedia('(min-width: 768px)').matches;
 const fmt = n => `Updated ${n.up}`;
+let toastTimer;
 
 function el(html){const t=document.createElement('template');t.innerHTML=html.trim();return t.content.firstChild;}
+function showToast(message){
+  const toast=document.getElementById('demo-toast');
+  toast.textContent=message; toast.classList.add('show');
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>toast.classList.remove('show'),2800);
+}
 function monoCount(fid){
   let c=0; (DATA.notes[fid]||[]).forEach(()=>c++); return c;
 }
@@ -233,13 +316,13 @@ function renderSidebar(){
   const s=document.getElementById('sidebar');
   const parts=[`<div class="side-head"><h2>Folders</h2></div>`];
   DATA.folders.forEach(f=>{
-    parts.push(`<div class="folder ${state.folder===f.id?'active':''}" data-folder="${f.id}"><span>${f.name}</span><span class="count">${monoCount(f.id)}</span></div>`);
+    parts.push(`<button type="button" class="folder ${state.folder===f.id?'active':''}" data-folder="${f.id}" aria-current="${state.folder===f.id?'page':'false'}"><span>${f.name}</span><span class="count">${monoCount(f.id)}</span></button>`);
   });
   parts.push(`<div class="tags-wrap"><h2>Tags</h2></div><div class="taglist">`);
   ['checklist','security','cash','report','guide','setup','policy','alarm'].forEach(t=>{
-    parts.push(`<div class="tag ${state.tag===t?'active':''}" data-tag="${t}">#${t}</div>`);
+    parts.push(`<button type="button" class="tag ${state.tag===t?'active':''}" data-tag="${t}" aria-pressed="${state.tag===t}">#${t}</button>`);
   });
-  parts.push(`</div><div class="trash-link ${state.trash?'active':''}" data-trash="1"><span>🗑</span>Trash</div>`);
+  parts.push(`</div><button type="button" class="trash-link ${state.trash?'active':''}" data-trash="1" aria-current="${state.trash?'page':'false'}"><svg aria-hidden="true" viewBox="0 0 20 20" fill="none"><path d="M4.5 6.5h11M8 6.5V4h4v2.5m2.5 0-.7 9.5H6.2l-.7-9.5M8.5 9v4.5M11.5 9v4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Trash</button>`);
   s.innerHTML=parts.join('');
 }
 
@@ -247,6 +330,7 @@ function renderCrumbs(){
   const c=document.getElementById('crumbs');
   let html='';
   if(state.trash) html=`Trash`;
+  else if(state.editor){const n=state.editorNote==='draft'?DRAFT:NOTES[state.editorNote]; html=`${n.f} &nbsp;/&nbsp; ${n.t} &nbsp;·&nbsp; ${state.preview?'Preview':'Editor demo'}`;}
   else if(state.tag) html=`<b>#${state.tag}</b> &nbsp;·&nbsp; ${tagCount(state.tag)} notes`;
   else if(state.note){ const f=DATA.folders.find(x=>x.name===NOTES[state.note].f);
     html=`${NOTES[state.note].f} &nbsp;/&nbsp; ${NOTES[state.note].t}`; }
@@ -268,12 +352,11 @@ function renderList(){
   v.innerHTML=`
     <div class="listview">
       <div class="list-head"><h1>${title} <span class="empty">· ${arr.length} notes</span></h1>
-      <button class="btn">New Note</button></div>
+      <button class="btn" type="button" data-new-note>New Note</button></div>
       <ul class="notes">${arr.map(n=>`
-        <li class="note" data-open="${n.id}">
-          <div><div class="t">${n.t}</div><div class="m">${fmt(n)}</div></div>
-          <span class="x" data-del="${n.id}">✕</span>
-        </li>`).join('')}
+        <li class="note"><button class="note-open" type="button" data-open="${n.id}">
+          <span><span class="t">${n.t}</span><span class="m">${fmt(n)}</span></span>
+        </button></li>`).join('')}
       </ul>
     </div>`;
 }
@@ -283,7 +366,7 @@ function renderTags(){
   const arr=Object.values(DATA.notes).flat().filter(n=>n.tags.includes(state.tag));
   v.innerHTML=`<div class="listview">
     <div class="list-head"><h1>#${state.tag} <span class="empty">· ${arr.length} notes</span></h1></div>
-    <ul class="notes">${arr.map(n=>`<li class="note" data-open="${n.id}"><div><div class="t">${n.t}</div><div class="m">${n.f} · ${fmt(n)}</div></div></li>`).join('')}</ul>
+    <ul class="notes">${arr.map(n=>`<li class="note"><button class="note-open" type="button" data-open="${n.id}"><span><span class="t">${n.t}</span><span class="m">${n.f} · ${fmt(n)}</span></span></button></li>`).join('')}</ul>
   </div>`;
 }
 
@@ -291,7 +374,7 @@ function renderTrash(){
   const v=document.getElementById('v-trash');
   v.innerHTML=`<div class="listview">
     <div class="list-head"><h1>Trash <span class="empty">· ${DATA.trash.length} notes</span></h1></div>
-    <ul class="notes">${DATA.trash.map(n=>`<li class="note"><div><div class="t">${n.t}</div><div class="m">${n.f} · ${fmt(n)}</div></div><span class="x">↩</span></li>`).join('')}</ul>
+    <ul class="notes">${DATA.trash.map(n=>`<li class="note"><div class="note-open"><span><span class="t">${n.t}</span><span class="m">${n.f} · ${fmt(n)}</span></span></div></li>`).join('')}</ul>
   </div>`;
 }
 
@@ -299,52 +382,128 @@ function renderNote(){
   const n=NOTES[state.note]; if(!n) return;
   const v=document.getElementById('v-note');
   v.innerHTML=`<div class="noteview">
-    <div class="back" data-back="1">← Back to list</div>
+    <div class="note-actions"><button class="back" type="button" data-back="1">← Back to list</button><button class="btn ghost" type="button" data-edit="${n.id}">Edit preview</button></div>
     <h1>${n.t}</h1>
     <div class="nv-meta"><span>${n.f}</span><span>${fmt(n)}</span>${n.tags.map(t=>`<span class="tagpill">#${t}</span>`).join('')}</div>
-    <div class="nv-body">${n.body}</div>
+    <div class="nv-body">${n.body.replace(/<input type="checkbox"(?![^>]*disabled)/gi,'<input type="checkbox" disabled')}</div>
+  </div>`;
+}
+
+function renderEditor(){
+  const isDraft=state.editorNote==='draft';
+  const n=isDraft?DRAFT:NOTES[state.editorNote];
+  if(!n) return;
+  const v=document.getElementById('v-editor');
+  const body=n.body.replace(/<input type="checkbox"(?![^>]*disabled)/gi,'<input type="checkbox" disabled');
+  const toolbar=`<div class="editor-toolbar" aria-label="Formatting tools">
+    <button type="button" data-tool="Heading 1" aria-label="Heading 1">H1</button>
+    <button type="button" data-tool="Heading 2" aria-label="Heading 2">H2</button>
+    <button type="button" data-tool="Bold" aria-label="Bold"><b>B</b></button>
+    <button type="button" data-tool="Italic" aria-label="Italic"><i>I</i></button>
+    <details><summary>Text⌄</summary><div class="tool-menu"><button type="button" data-tool="Paragraph">Paragraph</button><button type="button" data-tool="Heading 3">Heading 3</button><button type="button" data-tool="Quote">Quote</button></div></details>
+    <details><summary>• List⌄</summary><div class="tool-menu"><button type="button" data-tool="Bullet list">Bullet list</button><button type="button" data-tool="Numbered list">Numbered list</button><button type="button" data-tool="Checklist">Checklist</button></div></details>
+    <details><summary>Table⌄</summary><div class="tool-menu"><button type="button" data-tool="Insert 2 × 2 table">2 × 2 table</button><button type="button" data-tool="Insert 3 × 3 table">3 × 3 table</button></div></details>
+    <details><summary>Code⌄</summary><div class="tool-menu"><button type="button" data-tool="Code block">Code block</button><button type="button" data-tool="Inline code">Inline code</button></div></details>
+    <button type="button" data-tool="Link">Link</button>
+    <details><summary>More⌄</summary><div class="tool-menu"><button type="button" data-tool="Horizontal rule">Horizontal rule</button><button type="button" data-tool="Insert image">Insert image</button><button type="button" data-tool="Slash commands">Slash commands (/)</button></div></details>
+    <button type="button" disabled aria-label="Undo">↶</button><button type="button" disabled aria-label="Redo">↷</button>
+  </div>`;
+  v.innerHTML=`<div class="editorview">
+    <button class="back" type="button" data-editor-back>← ${n.f}</button>
+    <div class="editor-head"><h1>${n.t}</h1><span class="editor-state">Static preview · not saved</span>
+      <div class="editor-actions"><button class="btn secondary" type="button" data-preview-toggle>${state.preview?'Back to editor':'Preview'}</button><button class="btn secondary" type="button" data-print>Print</button><button class="btn secondary" type="button" data-attach>Attach file</button><button class="btn" type="button" data-demo-save>Save</button></div>
+    </div>
+    <div class="editor-tags">${n.tags.map(t=>`<span class="tagpill">#${t}</span>`).join('')} <span>+ tag</span></div>
+    ${state.preview?`<article class="editor-preview" aria-label="Read-only note preview">${body}<div class="sample-attachment"><span class="file-mark">PDF</span><div><strong>Maintenance checklist.pdf</strong><span>PDF · 184 KB · synthetic file</span></div></div></article>`:`${toolbar}
+      <div class="editor-outline"><button type="button" data-outline aria-expanded="${state.outlineOpen}">☰ Outline</button><nav class="outline-list" id="outline-list" ${state.outlineOpen?'':'hidden'}><a href="#editor-checklist">Checklist</a></nav><span>Drag ⋮⋮ on the left of a block to reorder · paste screenshots with Ctrl+V</span></div>
+      <article class="editor-canvas" aria-label="Read-only sample editor content">${body}<div class="sample-attachment"><span class="file-mark">PDF</span><div><strong>Maintenance checklist.pdf</strong><span>PDF · 184 KB · synthetic file</span></div></div></article>
+      <div class="editor-footer"><span>46 words · ~1 min read</span><button type="button" data-shortcuts>⌨ Shortcuts (Ctrl+/)</button></div>`}
   </div>`;
 }
 
 function renderSearch(q){
   const pop=document.getElementById('qpop');
-  if(!q.trim()){pop.classList.remove('open');return;}
+  const input=document.getElementById('q');
+  if(!q.trim()){pop.classList.remove('open');input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');return;}
   const ql=q.toLowerCase();
   const hits=Object.values(DATA.notes).flat().filter(n=>(n.t+' '+n.body).toLowerCase().includes(ql)).slice(0,6);
-  pop.innerHTML = hits.length? hits.map(n=>`<div class="sr" data-open="${n.id}"><b>${n.t}</b><span>${n.f} · ${n.body.replace(/<[^>]+>/g,'').slice(0,60)}…</span></div>`).join(''): `<div class="sr"><b>No matching notes</b></div>`;
+  state.searchIndex=Math.min(state.searchIndex, hits.length-1);
+  pop.innerHTML = hits.length? hits.map((n,i)=>`<button type="button" class="sr ${i===state.searchIndex?'active':''}" role="option" aria-selected="${i===state.searchIndex}" id="q-result-${i}" data-open="${n.id}"><b>${n.t}</b><span>${n.f} · ${n.body.replace(/<[^>]+>/g,'').slice(0,60)}…</span></button>`).join(''): `<p class="sr empty-result" role="status">No matching notes</p>`;
   pop.classList.add('open');
+  input.setAttribute('aria-expanded','true');
+  if(state.searchIndex>=0) input.setAttribute('aria-activedescendant',`q-result-${state.searchIndex}`); else input.removeAttribute('aria-activedescendant');
 }
 
 function show(){
-  ['v-list','v-note','v-tags','v-trash'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  ['v-list','v-note','v-editor','v-tags','v-trash'].forEach(id=>document.getElementById(id).classList.remove('on'));
   let target;
-  if(state.trash) target='v-trash';
+  if(state.editor) target='v-editor';
+  else if(state.trash) target='v-trash';
   else if(state.note) target='v-note';
   else if(state.tag) target='v-tags';
   else target='v-list';
   document.getElementById(target).classList.add('on');
+  if(window.matchMedia('(min-width: 768px)').matches) state.sidebarOpen=true;
+  document.body.classList.toggle('sidebar-open',state.sidebarOpen);
+  document.getElementById('sidebar-toggle').setAttribute('aria-expanded',String(state.sidebarOpen));
   renderSidebar(); renderCrumbs();
   if(target==='v-list') renderList();
   else if(target==='v-tags') renderTags();
   else if(target==='v-trash') renderTrash();
+  else if(target==='v-editor') renderEditor();
   else renderNote();
   document.getElementById('mainscroll') && 0;
 }
 
 document.addEventListener('click',e=>{
-  const f=e.target.closest('[data-folder]');
-  const t=e.target.closest('[data-tag]');
-  const tr=e.target.closest('[data-trash]');
-  const open=e.target.closest('[data-open]');
-  const back=e.target.closest('[data-back]');
-  if(f){state={where:'list',folder:f.dataset.folder,note:null,tag:null,trash:false};show();return;}
-  if(t){state={where:'tags',folder:null,note:null,tag:t.dataset.tag,trash:false};show();return;}
-  if(tr){state={where:'trash',folder:null,note:null,tag:null,trash:true};show();return;}
-  if(open){ state.note=open.dataset.open; state.tag=null; state.trash=false; state.where='note'; show(); return;}
-  if(back){state.note=null;state.where='list';show();}
+  const target=e.target instanceof Element?e.target:null;
+  if(!target) return;
+  const f=target.closest('[data-folder]');
+  const t=target.closest('[data-tag]');
+  const tr=target.closest('[data-trash]');
+  const open=target.closest('[data-open]');
+  const back=target.closest('[data-back]');
+  const newNote=target.closest('[data-new-note]');
+  const edit=target.closest('[data-edit]');
+  const editorBack=target.closest('[data-editor-back]');
+  const preview=target.closest('[data-preview-toggle]');
+  const outline=target.closest('[data-outline]');
+  const save=target.closest('[data-demo-save]');
+  const attach=target.closest('[data-attach]');
+  const print=target.closest('[data-print]');
+  const shortcuts=target.closest('[data-shortcuts]');
+  const tool=target.closest('[data-tool]');
+  if(newNote){state.editor=true;state.editorNote='draft';state.note=null;state.preview=false;state.trash=false;show();return;}
+  if(edit){state.editor=true;state.editorNote=edit.dataset.edit;state.preview=false;show();return;}
+  if(preview){state.preview=!state.preview;show();return;}
+  if(editorBack){const wasDraft=state.editorNote==='draft';state.editor=false;state.preview=false;state.editorNote=null;if(wasDraft)state.note=null;state.where=state.note?'note':'list';show();return;}
+  if(outline){state.outlineOpen=!state.outlineOpen;show();return;}
+  if(save){showToast('This static preview does not save or send your content.');return;}
+  if(attach){showToast('File uploads are disabled in this synthetic demo.');return;}
+  if(print){showToast('Print is available in the live app; this preview does not open a print job.');return;}
+  if(shortcuts){showToast('Shortcuts: Ctrl/⌘ K search · Ctrl/⌘ B bold · Ctrl/⌘ I italic · / commands');return;}
+  if(tool){showToast(`${tool.dataset.tool} is shown for preview; edits are not saved.`);tool.closest('details')?.removeAttribute('open');return;}
+  if(f){state={...state,where:'list',folder:f.dataset.folder,note:null,tag:null,trash:false,editor:false,editorNote:null,preview:false,sidebarOpen:window.matchMedia('(min-width: 768px)').matches};show();return;}
+  if(t){state={...state,where:'tags',folder:null,note:null,tag:t.dataset.tag,trash:false,editor:false,editorNote:null,preview:false,sidebarOpen:window.matchMedia('(min-width: 768px)').matches};show();return;}
+  if(tr){state={...state,where:'trash',folder:null,note:null,tag:null,trash:true,editor:false,editorNote:null,preview:false,sidebarOpen:window.matchMedia('(min-width: 768px)').matches};show();return;}
+  if(open){document.getElementById('qpop').classList.remove('open');document.getElementById('q').setAttribute('aria-expanded','false');state={...state,note:open.dataset.open,tag:null,trash:false,editor:false,editorNote:null,preview:false,where:'note',sidebarOpen:window.matchMedia('(min-width: 768px)').matches};show();return;}
+  if(back){state={...state,note:null,editor:false,editorNote:null,preview:false,where:'list'};show();}
 });
-document.getElementById('q').addEventListener('input',e=>renderSearch(e.target.value));
-document.addEventListener('click',e=>{ if(!e.target.closest('.searchwrap')) document.getElementById('qpop').classList.remove('open'); });
+document.getElementById('sidebar-toggle').addEventListener('click',()=>{state.sidebarOpen=!state.sidebarOpen;document.body.classList.toggle('sidebar-open',state.sidebarOpen);document.getElementById('sidebar-toggle').setAttribute('aria-expanded',String(state.sidebarOpen));});
+document.getElementById('sidebar-backdrop').addEventListener('click',()=>{state.sidebarOpen=false;document.body.classList.remove('sidebar-open');document.getElementById('sidebar-toggle').setAttribute('aria-expanded','false');});
+document.getElementById('q').addEventListener('input',e=>{state.searchIndex=-1;renderSearch(e.target.value);});
+document.getElementById('q').addEventListener('keydown',e=>{
+  const results=[...document.querySelectorAll('#qpop [role="option"]')];
+  if(e.key==='Escape'){document.getElementById('qpop').classList.remove('open');e.target.setAttribute('aria-expanded','false');e.target.removeAttribute('aria-activedescendant');return;}
+  if(!results.length)return;
+  if(e.key==='ArrowDown'){e.preventDefault();state.searchIndex=Math.min(state.searchIndex+1,results.length-1);renderSearch(e.target.value);}
+  else if(e.key==='ArrowUp'){e.preventDefault();state.searchIndex=Math.max(state.searchIndex-1,-1);renderSearch(e.target.value);}
+  else if(e.key==='Enter'&&state.searchIndex>=0){e.preventDefault();results[state.searchIndex]?.click();}
+});
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&!e.altKey&&!e.shiftKey&&e.key.toLowerCase()==='k'&&!e.target.isContentEditable&&!/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)){e.preventDefault();document.getElementById('q').focus();document.getElementById('q').select();}});
+document.addEventListener('click',e=>{if(!(e.target instanceof Element)||!e.target.closest('.searchwrap')){document.getElementById('qpop').classList.remove('open');document.getElementById('q').setAttribute('aria-expanded','false');}});
+document.addEventListener('click',e=>{if(!(e.target instanceof Element)||!e.target.closest('.editor-toolbar details'))document.querySelectorAll('.editor-toolbar details[open]').forEach(menu=>menu.removeAttribute('open'));});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.editor-toolbar details[open]').forEach(menu=>menu.removeAttribute('open'));});
 
 show();
 </script>

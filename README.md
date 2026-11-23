@@ -6,8 +6,8 @@
 
 A walkthrough of **Team Notes Hub**, a small shared web app for a team's
 manuals, notes and files — Finder-style folder sidebar, always-on search bar,
-and shared-password login. The app is built with Next.js + PostgreSQL and runs
-inside a company, so its source and real content stay private.
+and shared-password login. The live team instance and its real content remain
+private; this page is a standalone preview.
 
 **Everything here is synthetic.** This page is a static, read-only preview of
 the interface. Every folder, note, tag and snippet of text was invented to look
@@ -21,10 +21,15 @@ Click any folder to see its notes, any tag to filter across folders, or Trash
 to see the soft-delete list.
 
 **Search** — the always-on search bar that filters across every note by title
-and body text, same as in the app.
+and body text. Use `Ctrl/⌘ K`, then the arrow keys and Enter to move through
+suggestions.
 
 **Note view** — a sample rich-text note rendered the way the editor stores it:
 checklists, tables, code blocks, quotes and headings.
+
+**Editor preview** — a sample of the current formatting toolbar, outline,
+attachment row, and Preview/Print controls. `New Note` and `Edit preview` open
+this static editor view; Save and upload actions explain that nothing is stored.
 
 ## About the real app
 
@@ -34,4 +39,4 @@ password gates access — no per-user accounts — because the PRD calls it a
 small, trusted-team tool. Daily automated backups are the recovery path for the
 no-undo editor. The note body uses Tiptap v3 for rich content.
 
-Happy to walk through the private repository on request.
+The app source is in the public [team-notes-hub repository](https://github.com/Olay097056/team-notes-hub). The live team instance and its content are not connected to this demo.
